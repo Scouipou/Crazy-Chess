@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 // Je le met ici mais tableau se construit comme ça : tableau[y][x]
 #define cout_Reine 10
@@ -8,7 +9,7 @@
 #define cout_Tour 5
 #define cout_Cavalier_Fou 7
 #define cout_Prince 6
-// Les représentation DOIVENT être différentes (sinon bug)(faut vérifier ça aussi du coup)
+
 #define representation_Reine 'R'
 #define representation_Cavalier 'C'
 #define representation_Fou 'F'
@@ -48,6 +49,7 @@ typedef struct {
   char color[10]; // Par défaut c'est Blanc et Noir
   Board board;    // Regrouper les différentes pièces du joueurs
   int fin_achat;  // Savoir si le joueur a fini sa phase d'achat (0 pas fini \ 1 fini)
+  int fin_game;
 } Player;
 
 // Structure Game (sauvegarde)
@@ -78,8 +80,32 @@ void affichage(Piece tableau[11][11]) {
   printf("A B C D E F G H I J K\n");
 }
 
+// Fonction qui vérifie les représentation des pièces
+void verif_representation_piece() {
+
+  char representations[8] = {
+    representation_Reine,
+    representation_Cavalier,
+    representation_Fou,
+    representation_Tour,
+    representation_Cavalier_Fou,
+    representation_Prince,
+    representation_Roi,
+    representation_Pion
+  };
+
+  for (int i = 0; i < 7; i++) {
+    for (int j = i + 1; j < 8; j++) {
+      if (representations[i] == representations[j]) {
+        printf("verif_representation : Erreur : même representation");
+        exit(1);
+      } } }
+ 
+  return;
+}
+
 // Fonction pour l'initialisation du plateau de jeux
-void initialisation_plateau(Player player[2], Piece tableau[11][11]) {
+void init_plateau(Player player[2], Piece tableau[11][11]) {
  
   // Placement des pièces blanches
   tableau[9][5] = player[0].board.Roi;
@@ -125,6 +151,43 @@ void initialisation_plateau(Player player[2], Piece tableau[11][11]) {
 
 }
 
+// Fonction pour l'initialisation des pièces
+void init_piece(Board* board_blanc, Board* board_noir) {
+
+  // Vérifie que les pointeurs ne sont pas nuls
+  if (!board_blanc || !board_noir) {
+    printf("init_piece : Erreur : pointeur null\n");
+    exit(1);
+  }
+ 
+  // Initialisation des pièces Blanches
+  *board_blanc = (Board) {
+    {representation_Reine, 'B', 0},
+    {representation_Cavalier, 'B', 0},
+    {representation_Fou, 'B', 0},
+    {representation_Tour, 'B', 0},
+    {representation_Cavalier_Fou, 'B', 0},
+    {representation_Prince, 'B', 0},
+    {representation_Roi, 'B', 0},
+    {representation_Pion, 'B', 0},
+    {0}
+  };
+ 
+
+  // Initialisation des pièces Noires
+  *board_noir = (Board) {
+    {representation_Reine, 'N', 0},
+    {representation_Cavalier, 'N', 0},
+    {representation_Fou, 'N', 0},
+    {representation_Tour, 'N', 0},
+    {representation_Cavalier_Fou, 'N', 0},
+    {representation_Prince, 'N', 0},
+    {representation_Roi, 'N', 0},
+    {representation_Pion, 'N', 0},
+    {0}
+  };
+}
+
 // Fonction de conversion de coordonnées informatiques en coordonnées d'échecs
 void conversion_coord_echecs(int x, int y, char* coord) {
  
@@ -156,42 +219,91 @@ int piece_moins_cher(int piece_dispo[6]) {
     if (piece_dispo[i] > 0) {
       if (min > cout_piece[i]) {
         min = cout_piece[i];
-      }
-    }
-  }
+      } } }
   return min;
 }
 
+
+int fonctionnalite(Player player, char letter) {
+
+  char passive_player[10];
+ 
+  if (letter == 's' || letter == 'S') {
+    printf("sauvegarde");
+   
+  }
+  else if (letter == 'n' || letter == 'N') {
+    printf("\nLe joueur %s propose la nulle.\n",player.color);
+   
+    if (strcmp(player.color, "Blanc") == 0) {
+      strcpy(passive_player, "Noir");
+    } else {
+      strcpy(passive_player, "Blanc");
+    }
+    printf("Joueur %s, acceptez vous la nulle ?\n", passive_player);
+   
+    printf("\nVeuillez confirmer votre choix : \n");
+    printf(" 1 - Accepter\n");
+    printf(" 0 - Refuser\n");
+
+   
+    int confirmation = 0;
+    printf("\nVotre choix (0-1): ");
+    while (scanf("%d", &confirmation) != 1 || (confirmation < 0 || confirmation > 1)) {
+      printf("\nChoix invalide.");
+      while (getchar() != '\n');
+      printf("\nVotre choix: ");
+    }
+    if (confirmation == 1) {
+      printf("Le joueur %s accepte la nulle.\n",passive_player);
+    } else {
+      printf("Le joueur %s n'accepte pas la nulle.",passive_player);
+    }
+  }
+  else if (letter == 'a' || letter == 'A') {
+    printf("Le joueur %s abandonne",player.color);
+  }
+  return 1;
+}
+
 // Fonction pour demander les coordonnées de l'utilisateur et les vérifier
-int demande_coordonnees(int coord[2]) {
+void demande_coordonnees(Player player, int coord[2]) {
  
   int x, y;
-  char letter;
+  char letter, input[6];
   printf("\nVeuillez entrer les coordonnées (ex. 8 4 ou H4) : ");
 
   // Boucle infinie pour demander les coordonnées jusqu'à ce qu'elles soient valides
   while (1) {
-    // Si les entrées ne sont composé que de chiffres
-    if (scanf("%d %d", &x, &y) == 2 && (x > 0 && x < 12) && (y > 0 && y < 12)) {
-      coord[0] = x - 1;
-      coord[1] = 11 - y; // Change les coordonnées d'echec pour des coordonnées informatique
-      return 1;
-     
-      // Si la première entrée est un caractère de A à K, suivi d'un entier entre 1 et 11
-    } else if (scanf(" %c%d", &letter, &y) == 2 && ((letter >= 'A' && letter <= 'K') || (letter >= 'a' && letter <= 'k')) && (y > 0 && y < 12)) {
-
-      // Si la lettre est minuscule, la convertir en majuscule
-      if (letter >= 'a' && letter <= 'k') {
-        letter = letter - 'a' + 'A';
+    if (fgets(input, sizeof(input), stdin)) {
+      if (input[0] == '/') {
+        fonctionnalite(player, input[1]);
+        continue; // saute le reste de la boucle et redemande les coordonnées
       }
-      coord[0] = letter - 'A';
-      coord[1] = 11 - y; // Change les coordonnées d'echec pour des coordonnées informatique
-      return 1;
-   
-    while (getchar() != '\n');
-    printf("Coordonnées invalides\n");
-    printf("\nEntrez les coordonnées (ex. 1 7 ou A7) : ");
+
+       // Si les entrées sont composées d'une lettre suivie d'un nombre
+      if (sscanf(input, "%c%d", &letter, &y) == 2 && ((letter >= 'A' && letter <= 'K') || (letter >= 'a' && letter <= 'k')) && (y > 0 && y < 12)) {
+
+        // Si la lettre est minuscule, la convertir en majuscule
+        if (letter >= 'a' && letter <= 'k') {
+          letter = letter - 'a' + 'A';
+        }
+        coord[0] = letter - 'A';
+        coord[1] = 11 - y; // Change les coordonnées d'échec pour des coordonnées informatiques
+        return;
+      }
+      // Si les entrées sont composées uniquement de chiffres
+      else if (sscanf(input, "%d %d", &x, &y) == 2 && (x > 0 && x < 12) && (y > 0 && y < 12)) {
+
+        coord[0] = x - 1;
+        coord[1] = 11 - y; // Change les coordonnées d'échec pour des coordonnées informatiques
+        return;
+      }
     }
+
+    // Si les coordonnées ne sont pas valides
+    printf("Coordonnées invalides\n");
+    printf("\nEntrez les coordonnées (ex. 8 4 ou H4) : ");
   }
 }
 
@@ -226,7 +338,7 @@ void promotion_pion(Player player, Piece tableau[11][11], int x, int y) {
 
   // Vérification que les coordonnées sont valides
   if (x < 0 || x > 10 || y < 0 || y > 10) {
-    printf("Erreur : coordonnées données non conformes.");
+    printf("promotion_pion : Erreur : coordonnées données non conformes.");
     exit(1);
   }  
 
@@ -745,6 +857,7 @@ int verif_deplacement_joueur(Player active_player, Player passive_player, Piece 
 
             // Vérifie si le déplacement de la pièce de la première coordonnée à la seconde est possible
             if (verif_deplacement_piece(active_player, passive_player, tableau, x1, y1, x2, y2) && (x1 != x2 || y1 != y2)){
+              printf("x:%d y:%d  x2:%d y2: %d ",x1,y1,x2,y2);  // Test move correct
               return 0;
             } } } } } }
   return 1;
@@ -802,7 +915,7 @@ void deplacement_piece(Player active_player, Player passive_player, Piece tablea
    
     while (1) {
       // Demande des coordonnées de départ
-      demande_coordonnees(coord);
+      demande_coordonnees(active_player, coord);
       x1 = coord[0];
       y1 = coord[1];
 
@@ -814,7 +927,7 @@ void deplacement_piece(Player active_player, Player passive_player, Piece tablea
     }
     // Demande des coordonnées d'arrivée
     printf("\nOù souhaitez vous déplacer votre pièce");
-    demande_coordonnees(coord);
+    demande_coordonnees(active_player, coord);
     x2 = coord[0];
     y2 = coord[1];
 
@@ -848,7 +961,7 @@ void placement_piece(Player player, Piece tableau[11][11], int choix) {
  
     // Demande de coordonnées au joueur
     int coord[2];
-    demande_coordonnees(coord);
+    demande_coordonnees(player, coord);
     int x = coord[0];
     int y = coord[1];
    
@@ -856,7 +969,7 @@ void placement_piece(Player player, Piece tableau[11][11], int choix) {
     while ((verif_coordonnee_piece(player, tableau, x, y) != 0) || (verif_zone_depart(player, tableau, x, y) != 0)) {
      
       printf("Vous ne pouvez pas placer votre pièce ici, veuillez choisir à nouveau\n");
-      demande_coordonnees(coord);
+      demande_coordonnees(player, coord);
       x = coord[0];
       y = coord[1];
     }
@@ -895,7 +1008,8 @@ int boutique(Player *player, int *piece_dispo) {
     printf("boutique : Erreur : pointeur null\n");
     exit(1);
   }
-  // Vérifie si le joueur peut/veut jouer
+ 
+  // Vérifie si le joueur peut jouer
   if (player->fin_achat == 1) {
     // Il sort de la boucle dans phase_achat
     return -1;
@@ -1030,7 +1144,7 @@ int boutique(Player *player, int *piece_dispo) {
     if (confirmation == 1){
       // Met à jour le statut du joueur pour indiquer qu'il a quitté la boutique
       player->fin_achat = 1;
-      printf("\nJoueur %s vous avez décidé de quitter la boutique. Vous ne pourrez donc plus placer de pièce.\n",player->color);
+      printf("\nJoueur %s vous avez décidé de quitter la boutique. Vous ne pourrez donc plus acheter de pièce.\n",player->color);
       return -1;
     } else{
       printf("\nVous revenez sur votre décision \n");
@@ -1094,18 +1208,18 @@ void phase_achat(Player *player, Piece tableau[11][11]) {
   printf("\nLa boutique n'est plus disponible, la partie peut commencer.\n");
 }
 
-// Fonction pour la phase de jeu standard
+// Fonction pour la phase de déplacement des joueurs
 void phase_jeux(Player *players, Piece tableau[11][11]) {
  
   // Vérifie que le pointeur n'est pas nul
   if (!players) {
-    printf("Erreur : pointeur null.\n");
+    printf("phase_jeux : Erreur : pointeur null.\n");
     exit(1);
   }
 
   int active_player = 0;
   int passive_player = 1;
- 
+
   // Continue le jeu tant que le jeu n'est pas terminé
   while (end_game(players[active_player], players[passive_player], tableau) == 0) {
     // Demande au joueur actif de déplacer une pièce
@@ -1120,45 +1234,41 @@ void phase_jeux(Player *players, Piece tableau[11][11]) {
   }
 }
 
-int main() {
- 
-  // Initialisation des pièces Blanches
- Board board_blanc = {{representation_Reine, 'B', 0},
-                       {representation_Cavalier, 'B', 0},
-                       {representation_Fou, 'B', 0},
-                       {representation_Tour, 'B', 0},
-                       {representation_Cavalier_Fou, 'B', 0},
-                       {representation_Prince, 'B', 0},
-                       {representation_Roi, 'B', 0},
-                       {representation_Pion, 'B', 0},
-                       {0}};
+// Fonction qui coordonne la phase de jeux
+void play_game() {
 
-  // Initialisation des pièces Noires
-  Board board_noir = {{representation_Reine, 'N', 0},
-                      {representation_Cavalier, 'N', 0},
-                      {representation_Fou, 'N', 0},
-                      {representation_Tour, 'N', 0},
-                      {representation_Cavalier_Fou, 'N', 0},
-                      {representation_Prince, 'N', 0},
-                      {representation_Roi, 'N', 0},
-                      {representation_Pion, 'N', 0},
-                      {0}};
+  // Initialisation des pièces
+  Board board_blanc, board_noir;
+  init_piece(&board_blanc, &board_noir);
 
   // Initialisation du jeu
-  Game game = {.tableau = {0},
-               .player = {{nb_points_depart, 1, "Blanc", board_blanc, 0},
-                          {nb_points_depart, 0, "Noir", board_noir, 0}}};
+  Game game = {
+    .tableau = {0},
+    .player = {
+      {nb_points_depart, 1, "Blanc", board_blanc, 0,0},
+      {nb_points_depart, 0, "Noir", board_noir, 0,0}
+    }
+  };
 
   // Initialisation du plateau de jeux
-  initialisation_plateau(game.player, game.tableau);
+  init_plateau(game.player, game.tableau);
+
+  // Verifie les représentations des différentes pièces
+  verif_representation_piece();
+
+  // Lancement de la phase achat
+  phase_achat(game.player, game.tableau);
+
+  // Lancement de la phase jeux
+  phase_jeux(game.player, game.tableau);
+}
+
+int main() {
 
   // Affichage du texte de présentation
   printf("\nDans ce jeu d'échecs modifié, l'échiquier mesure 11x11 cases. Les joueurs ont la possibilité de choisir la position initiale des pièces pendant la phase d'achat. Le but du jeu est de mettre en échec et mat le roi adverse pour gagner la partie. Les joueurs ont à leur disposition les pièces classiques ainsi que deux nouvelles pièces, le cavalier fou et le prince. Les règles de base du jeu d'échecs sont respectées.\n");
 
-  // Lancement de la phase achat
-  phase_achat(game.player, game.tableau);
+  play_game();
  
-  // Lancement de la phase jeux
-  phase_jeux(game.player, game.tableau);
   return 0;
 }
