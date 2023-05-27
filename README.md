@@ -4,7 +4,7 @@
 Dans ce jeu d'échecs modifié, l'échiquier mesure 11x11 cases. Les joueurs ont la possibilité de choisir la position initiale des pièces pendant une phase d'achat. Le but du jeu est de mettre en échec et mat le roi adverse pour gagner la partie. Les joueurs ont à leur disposition les pièces classiques ainsi que deux nouvelles pièces, le cavalier fou et le prince. Les règles de base du jeu d'échecs sont respectées.
 
 ## Comment executer le projet
-- Dans le terminal : se trouver dans le répertoire Crazy-Chess 
+- Dans le terminal : se trouver dans le répertoire crazyChess 
 ```bash
   cd CrazyChess
 ```
