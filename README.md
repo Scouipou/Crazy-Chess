@@ -49,6 +49,8 @@ Ce projet est un jeu d'échecs modifié implémenté en utilisant 8 modules dist
 
 - Les règles du jeu sont identiques à celles du jeu d'échecs classique, en tenant compte des pièces supplémentaires.
 
+- La partie se termine dans les cas suivants : échec et mat (lorsque le roi est mis en échec et ne peut plus échapper) ou pat (lorsque le joueur ne peut plus déplacer aucune de ses pièces, mais n'est pas en position d'échec).
+
 
 
 
